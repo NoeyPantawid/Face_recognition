@@ -9,24 +9,24 @@ import numpy as np
 global cap
 cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)
 
-#!ห้ามลบ ส่วนสำคัญ
+#!Important part don't delete
 class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
     def __init__(self):
         super(Project, self).__init__()
 
-        #ซ่อน title bar อันเดิม
+        #hide initial title bar
         self.setWindowFlag(Qt.FramelessWindowHint)
 
         self.uif = Ui_MainWindow()
         self.uif.setupUi(self)
         #!--------------
 
-        #แสดงผลภาพ
+        #show graphic
         self.Worker1 = Worker1()
         self.Worker1.start()
         self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
 
-        #เลื่อนหน้าต่าง
+        #move window
         def moveWindow(event):
             if event.buttons() == Qt.LeftButton:
                 self.move(self.pos() + event.globalPos() - self.dragPos)
@@ -35,18 +35,18 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
 
         self.uif.frame_4.mouseMoveEvent = moveWindow
 
-        #ปุ่มย่อและปุ่มปิด
+        #Minimize and quit button
         self.uif.minimize.pressed.connect(self.btn_minimize)
         self.uif.close.pressed.connect(self.btn_close)
-        #ปุ่มเปลี่ยนหน้า
+        #Chnage page button
         self.uif.btn_page_1.pressed.connect(self.btn_to_page_1)
         self.uif.btn_page_2.pressed.connect(self.btn_to_page_2)
         self.uif.btn_page_3.pressed.connect(self.btn_to_page_3)
-        #ปุ่มสั่งเทรน
+        #Capture current face and remember
         self.uif.minimize_4.pressed.connect(self.btn_train)
-        #ปุ่มแสดงผล
+        #Start
         self.uif.minimize_5.pressed.connect(self.btn_show)
-        #ปุ่มเคลียร์ data
+        #Clear data button
         self.uif.cleardataall.pressed.connect(self.btn_deletedata)
 
         if cap.isOpened():
@@ -54,11 +54,10 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
         else:
             self.uif.textBrowser_2.setText("camera off")
 
-        #ตาราง database
-        #self.uif.tableWidget.setRowCount(50)
+        #database table
         self.uif.connectdatabase.pressed.connect(self.connect_to_database)
 
-    #ฟังก์ชั่นย่อและปิด
+    #minimize and quit
     def btn_minimize(self):
         self.showNormal()
         self.showMinimized()
@@ -66,7 +65,7 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
     def btn_close(self):
         quit()
     
-    #ฟังก์ชั่นเปลี่ยหน้า
+    #Change page
     def btn_to_page_1(self):
         self.uif.stackedWidget.setCurrentWidget(self.uif.Detect)
     def btn_to_page_2(self):
@@ -74,14 +73,14 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
     def btn_to_page_3(self):
         self.uif.stackedWidget.setCurrentWidget(self.uif.Info)
     
-    #ฟังก์ชั่นอัพเดทภาพทุกเฟรม
+    #Update frame
     def ImageUpdateSlot(self, Image):
         try:
             self.uif.Screen.setPixmap(QPixmap.fromImage(Image))
         except Exception as e:
             self.uif.textBrowser_2.setText("Update Error {}".format(e))
 
-    #ฟังก์ชั่นสั่งเทรน
+    #Train
     def btn_train(self):
         try:
             os.mkdir('database')
@@ -112,7 +111,7 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
         except Exception as e:
             self.uif.textBrowser.setText("Error : {}".format(e))
     
-    #สร้างฐานข้อมูล
+    #Create database
     def create_database(self):
         database_path = os.getcwd() + '\\database\\db.sqlite'
         try:
@@ -133,7 +132,8 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
         database_path = os.getcwd() + '\\database\\db.sqlite'
         path = os.getcwd() + '\\image\\'
         FACE_ENCODINGS = {}
-        #DATASET
+
+        #? DATASET
         try:
             ID = self.uif.lineEdit.text()
             NAME = self.uif.lineEdit_2.text()
@@ -148,7 +148,6 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
                         FBR1 = FBR1 | FACE_ENCODINGS
                         with open(os.getcwd() + '\\database\\dataset_faces.dat', 'wb') as ff:
                             pickle.dump(FBR1, ff)
-                        #print(FBR1) แสดงอัพเดทล่าสุด
                     except Exception as e:
                         print('Cant dump maybe cuz u dumb')
 
@@ -157,7 +156,7 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
                     pickle.dump(FACE_ENCODINGS, f)
                     FACE_ENCODINGS['{} - {}'.format(TIER, NAME)] = face.face_encodings(NAME_image)[0]
 
-            #! การเชื่อมต่อกับ database มีปัญหาตรง UNIQUE KEY ไม่สามารถแก้ไขได้
+            #! connect to database but cannot change UNIQUE KEY
             with sqlite3.connect('{}'.format(database_path)) as con:
                 sql_cmd = """
                 insert into People values('{}','{}','{}')
@@ -205,7 +204,7 @@ class Project(QtWidgets.QMainWindow, Ui_MainWindow, QThread):
         except Exception as e:
             self.uif.textBrowser_3.setText("ERROR : cant clear data folder")
 
-    #เลื่อนหน้าต่าง    
+    #move window    
     def mousePressEvent(self, event):
         self.dragPos = event.globalPos()
 
@@ -248,9 +247,9 @@ class Worker2(QThread,QtWidgets.QMainWindow, Ui_MainWindow):
 
                 face_names = []
                 face_percent = []
-
-                #ส่วนของโมเดล hog = ใช้ cpu cnn = ใช้ GPU/Cuda แต่ไม่รู้ทำไม cnn ถึงกระตุกมาก
-                face_locations = face.face_locations(rgb_small_frame, model="hog")
+                
+                #Face_recognition model ; hog = cpu, cnn = gpu/Cuda
+                face_locations = face.face_locations(rgb_small_frame, model="cnn")
 
                 face_encodings = face.face_encodings(rgb_small_frame, face_locations)
                 
@@ -298,7 +297,7 @@ class Worker2(QThread,QtWidgets.QMainWindow, Ui_MainWindow):
     def pause(self):
         self.ThreadActive = False
 
-#!ห้ามลบ ส่วนสำคัญ
+#!Important part don't delete
 app = QtWidgets.QApplication(sys.argv)
 NCode = Project()
 NCode.show()
